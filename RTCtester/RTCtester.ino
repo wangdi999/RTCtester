@@ -1,60 +1,66 @@
-// DS1307 & TM1637 7-segment with Arduino
+// 实验2：DS1307 实时时钟 + TM1637 显示“组号:分钟” + 串口带组号
 #include "TM1637.h"
 #include "RTClib.h"
-// pins definitions for TM1637 and can be changed to other ports       
+
 #define CLK 10
 #define DIO 9
-TM1637 tm1637(CLK,DIO);
-// Holds current clock time
-RTC_DS1307 RTC; 
-DateTime theTime; 
-int8_t TimeDisp[] = {0xff, 0xff, 0xff, 0xff};
+#define GROUP_NUM 91     // 你们组的组号（0-99）
+
+TM1637 tm1637(CLK, DIO);
+RTC_DS1307 RTC;
 
 void setup() {
   Serial.begin(9600);
+
   if (!RTC.begin()) {
     Serial.println("Couldn't find RTC");
-    while(1);
+    while (1);
   }
   if (!RTC.isrunning()) {
-    Serial.println("RTC is NOT running!");
+    Serial.println("RTC is NOT running, set to compile time");
     RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
+
   tm1637.init();
-  tm1637.set(2);         // TYPICAL = 2, DARKEST = 0, BRIGHTEST = 7;
-  tm1637.display(0,10);  // show A B C D for testing
-  tm1637.display(1,11);   
-  tm1637.display(2,12); 
-  tm1637.display(3,13);
-  delay(3000);
+  tm1637.set(7);          // 亮度 7（最亮，便于实验观察）
+  tm1637.point(POINT_ON); // 点亮中间的冒号
+
+  Serial.print("Group ");
+  Serial.println(GROUP_NUM);
 }
 
-int hour, minute, second;
-unsigned char ClockPoint = 1;
- 
 void loop() {
-  DateTime theTime = RTC.now();
-  second = theTime.second();  // get seconds
-  minute = theTime.minute();  // get minutes
+  DateTime now = RTC.now();
+  int group = GROUP_NUM % 100;
+  int minute = now.minute();
 
-  TimeDisp[0] = minute / 10;
-  TimeDisp[1] = minute % 10;
-  TimeDisp[2] = second / 10;
-  TimeDisp[3] = second % 10;
-  
-  tm1637.display(0,TimeDisp[0]);
-  tm1637.display(1,TimeDisp[1]); 
-  tm1637.display(2,TimeDisp[2]);
-  tm1637.display(3,TimeDisp[3]);
-  Serial.print("Set to ");
-  Serial.print(hour);
-  Serial.print(":");
-  Serial.print(minute);
-  Serial.print(":");
-  Serial.print(second);
-  Serial.println();
-  ClockPoint = (~ClockPoint) & 0x01;
-  if(ClockPoint)tm1637.point(POINT_ON);
-  else tm1637.point(POINT_OFF); 
-  delay(1000);  
+  // 左两位 = 组号，右两位 = 分钟，中间冒号 => “组号:分钟”
+  tm1637.display(0, group / 10);
+  tm1637.display(1, group % 10);
+  tm1637.display(2, minute / 10);
+  tm1637.display(3, minute % 10);
+  tm1637.point(POINT_ON);
+
+  // 串口数据前加组号
+  Serial.print("Group ");
+  Serial.print(GROUP_NUM);
+  Serial.print(": ");
+  Serial.print(now.year());
+  Serial.print('-');
+  if (now.month() < 10) Serial.print('0');
+  Serial.print(now.month());
+  Serial.print('-');
+  if (now.day() < 10) Serial.print('0');
+  Serial.print(now.day());
+  Serial.print(' ');
+  if (now.hour() < 10) Serial.print('0');
+  Serial.print(now.hour());
+  Serial.print(':');
+  if (now.minute() < 10) Serial.print('0');
+  Serial.print(now.minute());
+  Serial.print(':');
+  if (now.second() < 10) Serial.print('0');
+  Serial.println(now.second());
+
+  delay(1000);
 }
