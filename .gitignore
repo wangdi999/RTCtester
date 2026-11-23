@@ -1,4 +1,13 @@
-# 过滤 Arduino 编译产物
+# 实验资料与安装包（不纳入版本控制）
+*.exe
+*.zip
+*.docx
+*.pptx
+~$*
+git.txt
+CH341SER-Driver/
+
+# Arduino 编译产物
 build/
 *.hex
 *.elf
@@ -6,6 +15,6 @@ build/
 *.map
 *.o
 
-# 过滤操作系统缩略图
+# 系统缩略图
 .DS_Store
 Thumbs.db
